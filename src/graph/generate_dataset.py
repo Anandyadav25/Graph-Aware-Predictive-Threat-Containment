@@ -1,4 +1,5 @@
 import csv
+import json
 from pathlib import Path
 
 from network_graph import create_enterprise_network, run_attack_scenario
@@ -61,5 +62,42 @@ def generate_attack_dataset():
     print(f"Total records: {len(rows)}")
 
 
+def export_network_graph(graph):
+    """
+    Export the enterprise network structure for GNN processing.
+    """
+
+    graph_data = {
+        "nodes": [],
+        "edges": []
+    }
+
+    for node, attributes in graph.nodes(data=True):
+        graph_data["nodes"].append({
+            "id": node,
+            "type": attributes["type"],
+            "criticality": attributes["criticality"]
+        })
+
+    for source, target in graph.edges():
+        graph_data["edges"].append({
+            "source": source,
+            "target": target
+        })
+
+    output_path = (
+        Path(__file__).resolve().parents[2]
+        / "dataset"
+        / "network_graph.json"
+    )
+
+    with open(output_path, "w") as json_file:
+        json.dump(graph_data, json_file, indent=4)
+
+    print(f"Graph exported: {output_path}")
+
 if __name__ == "__main__":
+    graph = create_enterprise_network()
+
     generate_attack_dataset()
+    export_network_graph(graph)

@@ -1,0 +1,65 @@
+{
+    "nodes": [
+        {
+            "id": "firewall",
+            "type": "firewall",
+            "criticality": 5
+        },
+        {
+            "id": "web_server",
+            "type": "server",
+            "criticality": 4
+        },
+        {
+            "id": "app_server",
+            "type": "server",
+            "criticality": 4
+        },
+        {
+            "id": "database",
+            "type": "database",
+            "criticality": 5
+        },
+        {
+            "id": "auth_server",
+            "type": "authentication",
+            "criticality": 5
+        },
+        {
+            "id": "employee_pc_1",
+            "type": "endpoint",
+            "criticality": 2
+        },
+        {
+            "id": "employee_pc_2",
+            "type": "endpoint",
+            "criticality": 2
+        }
+    ],
+    "edges": [
+        {
+            "source": "firewall",
+            "target": "web_server"
+        },
+        {
+            "source": "web_server",
+            "target": "app_server"
+        },
+        {
+            "source": "app_server",
+            "target": "database"
+        },
+        {
+            "source": "app_server",
+            "target": "auth_server"
+        },
+        {
+            "source": "auth_server",
+            "target": "employee_pc_1"
+        },
+        {
+            "source": "auth_server",
+            "target": "employee_pc_2"
+        }
+    ]
+}
