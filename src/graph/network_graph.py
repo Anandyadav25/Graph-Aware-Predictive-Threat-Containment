@@ -123,12 +123,51 @@ def propagate_attack(graph, compromised_node, max_hops=2):
             graph.nodes[node]["compromised"] = 1
 
     return graph
+
+def run_attack_scenario(graph, source_node, max_hops=2):
+    """
+    Run an attack propagation scenario from a specified source node.
+
+    Parameters:
+        graph: NetworkX graph
+        source_node: Initial compromised node
+        max_hops: Maximum number of hops the attack can propagate
+
+    Returns:
+        List of compromised nodes.
+    """
+
+    graph = propagate_attack(graph, source_node, max_hops)
+
+    compromised_nodes = [
+        node
+        for node, attributes in graph.nodes(data=True)
+        if attributes["compromised"] == 1
+    ]
+
+    return compromised_nodes
   
 if __name__ == "__main__":
     graph = create_enterprise_network()
 
     # Simulate an attacker compromising the web server
-    graph = propagate_attack(graph, "web_server", max_hops=2)
+    scenarios = [
+    {"name": "web_attack", "source": "web_server", "max_hops": 2},
+    {"name": "endpoint_attack", "source": "employee_pc_1", "max_hops": 2},
+    {"name": "application_attack", "source": "app_server", "max_hops": 2},
+    {"name": "authentication_attack", "source": "auth_server", "max_hops": 2},
+]
+
+for scenario in scenarios:
+    compromised = run_attack_scenario(
+        graph,
+        scenario["source"],
+        scenario["max_hops"]
+    )
+
+    print(f"\nScenario: {scenario['name']}")
+    print(f"Source node: {scenario['source']}")
+    print(f"Compromised nodes: {compromised}")
 
     print("Number of nodes:", graph.number_of_nodes())
     print("Number of edges:", graph.number_of_edges())
