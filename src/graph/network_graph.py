@@ -89,12 +89,46 @@ def simulate_attack(graph, compromised_node):
     graph.nodes[compromised_node]["compromised"] = 1
 
     return graph
+
+def propagate_attack(graph, compromised_node, max_hops=2):
+    """
+    Simulate possible attack propagation through the network.
+
+    Parameters:
+        graph: NetworkX graph
+        compromised_node: Initial compromised node
+        max_hops: Maximum number of network hops the attack can spread
+
+    Returns:
+        Updated graph with propagated compromised nodes.
+    """
+
+    if compromised_node not in graph:
+        raise ValueError(f"Node '{compromised_node}' does not exist in the network.")
+
+    # Reset all nodes
+    for node in graph.nodes:
+        graph.nodes[node]["compromised"] = 0
+
+    # Find nodes reachable within the allowed number of hops
+    reachable_nodes = nx.single_source_shortest_path_length(
+        graph,
+        compromised_node,
+        cutoff=max_hops
+    )
+
+    # Mark reachable nodes as potentially compromised
+    for node, distance in reachable_nodes.items():
+        if distance <= max_hops:
+            graph.nodes[node]["compromised"] = 1
+
+    return graph
   
 if __name__ == "__main__":
     graph = create_enterprise_network()
 
     # Simulate an attacker compromising the web server
-    graph = simulate_attack(graph, "web_server")
+    graph = propagate_attack(graph, "web_server", max_hops=2)
 
     print("Number of nodes:", graph.number_of_nodes())
     print("Number of edges:", graph.number_of_edges())
