@@ -150,30 +150,20 @@ def run_attack_scenario(graph, source_node, max_hops=2):
 if __name__ == "__main__":
     graph = create_enterprise_network()
 
-    # Simulate an attacker compromising the web server
     scenarios = [
-    {"name": "web_attack", "source": "web_server", "max_hops": 2},
-    {"name": "endpoint_attack", "source": "employee_pc_1", "max_hops": 2},
-    {"name": "application_attack", "source": "app_server", "max_hops": 2},
-    {"name": "authentication_attack", "source": "auth_server", "max_hops": 2},
-]
+        {"name": "web_attack", "source": "web_server", "max_hops": 2},
+        {"name": "endpoint_attack", "source": "employee_pc_1", "max_hops": 2},
+        {"name": "application_attack", "source": "app_server", "max_hops": 2},
+        {"name": "authentication_attack", "source": "auth_server", "max_hops": 2},
+    ]
 
-for scenario in scenarios:
-    compromised = run_attack_scenario(
-        graph,
-        scenario["source"],
-        scenario["max_hops"]
-    )
+    for scenario in scenarios:
+        compromised = run_attack_scenario(
+            graph,
+            scenario["source"],
+            scenario["max_hops"]
+        )
 
-    print(f"\nScenario: {scenario['name']}")
-    print(f"Source node: {scenario['source']}")
-    print(f"Compromised nodes: {compromised}")
-
-    print("Number of nodes:", graph.number_of_nodes())
-    print("Number of edges:", graph.number_of_edges())
-
-    print("\nCompromised nodes:")
-
-    for node, attributes in graph.nodes(data=True):
-        if attributes["compromised"] == 1:
-            print(node, attributes)
+        print(f"\nScenario: {scenario['name']}")
+        print(f"Source node: {scenario['source']}")
+        print(f"Compromised nodes: {compromised}")
