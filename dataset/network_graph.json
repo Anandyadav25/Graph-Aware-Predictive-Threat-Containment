@@ -1,6 +1,7 @@
 {
     "nodes": [
         {
+            "index": 0,
             "id": "firewall",
             "type": "firewall",
             "criticality": 5,
@@ -8,6 +9,7 @@
             "betweenness": 0.0
         },
         {
+            "index": 1,
             "id": "web_server",
             "type": "server",
             "criticality": 4,
@@ -15,6 +17,7 @@
             "betweenness": 0.3333333333333333
         },
         {
+            "index": 2,
             "id": "app_server",
             "type": "server",
             "criticality": 4,
@@ -22,6 +25,7 @@
             "betweenness": 0.7333333333333333
         },
         {
+            "index": 3,
             "id": "database",
             "type": "database",
             "criticality": 5,
@@ -29,6 +33,7 @@
             "betweenness": 0.0
         },
         {
+            "index": 4,
             "id": "auth_server",
             "type": "authentication",
             "criticality": 5,
@@ -36,6 +41,7 @@
             "betweenness": 0.6
         },
         {
+            "index": 5,
             "id": "employee_pc_1",
             "type": "endpoint",
             "criticality": 2,
@@ -43,6 +49,7 @@
             "betweenness": 0.0
         },
         {
+            "index": 6,
             "id": "employee_pc_2",
             "type": "endpoint",
             "criticality": 2,
