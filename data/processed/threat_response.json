@@ -8,7 +8,7 @@
             "source_node": "192.168.10.5",
             "risk_score": 0.9981,
             "confidence": 0.9981,
-            "blast_radius": 2,
+            "blast_radius": 15,
             "affected_node_count": 15,
             "direct_affected_nodes": [
                 "205.174.165.73",
@@ -52,7 +52,7 @@
             "source_node": "192.168.10.16",
             "risk_score": 0.9986,
             "confidence": 0.9986,
-            "blast_radius": 2,
+            "blast_radius": 15,
             "affected_node_count": 15,
             "direct_affected_nodes": [
                 "192.168.10.50",
@@ -96,7 +96,7 @@
             "source_node": "192.168.10.8",
             "risk_score": 0.9994,
             "confidence": 0.9994,
-            "blast_radius": 2,
+            "blast_radius": 15,
             "affected_node_count": 15,
             "direct_affected_nodes": [
                 "205.174.165.73",
@@ -140,7 +140,7 @@
             "source_node": "192.168.10.9",
             "risk_score": 0.9991,
             "confidence": 0.9991,
-            "blast_radius": 2,
+            "blast_radius": 15,
             "affected_node_count": 15,
             "direct_affected_nodes": [
                 "205.174.165.73",
@@ -184,7 +184,7 @@
             "source_node": "192.168.10.14",
             "risk_score": 0.9993,
             "confidence": 0.9993,
-            "blast_radius": 2,
+            "blast_radius": 15,
             "affected_node_count": 15,
             "direct_affected_nodes": [
                 "205.174.165.73",
@@ -228,7 +228,7 @@
             "source_node": "192.168.10.17",
             "risk_score": 0.9992,
             "confidence": 0.9992,
-            "blast_radius": 2,
+            "blast_radius": 15,
             "affected_node_count": 15,
             "direct_affected_nodes": [
                 "192.168.10.50",
@@ -272,7 +272,7 @@
             "source_node": "192.168.10.12",
             "risk_score": 0.9986,
             "confidence": 0.9986,
-            "blast_radius": 2,
+            "blast_radius": 15,
             "affected_node_count": 15,
             "direct_affected_nodes": [
                 "192.168.10.50",
@@ -316,7 +316,7 @@
             "source_node": "192.168.10.50",
             "risk_score": 0.9884,
             "confidence": 0.9884,
-            "blast_radius": 2,
+            "blast_radius": 15,
             "affected_node_count": 15,
             "direct_affected_nodes": [
                 "192.168.10.12",
@@ -360,7 +360,7 @@
             "source_node": "192.168.10.15",
             "risk_score": 0.9991,
             "confidence": 0.9991,
-            "blast_radius": 2,
+            "blast_radius": 15,
             "affected_node_count": 15,
             "direct_affected_nodes": [
                 "205.174.165.73",
@@ -404,7 +404,7 @@
             "source_node": "205.174.165.73",
             "risk_score": 0.9897,
             "confidence": 0.9897,
-            "blast_radius": 2,
+            "blast_radius": 12,
             "affected_node_count": 12,
             "direct_affected_nodes": [
                 "192.168.10.15",
@@ -442,7 +442,7 @@
             "source_node": "192.168.10.19",
             "risk_score": 0.9995,
             "confidence": 0.9995,
-            "blast_radius": 2,
+            "blast_radius": 15,
             "affected_node_count": 15,
             "direct_affected_nodes": [
                 "192.168.10.50",
@@ -486,7 +486,7 @@
             "source_node": "192.168.10.51",
             "risk_score": 0.9988,
             "confidence": 0.9988,
-            "blast_radius": 2,
+            "blast_radius": 15,
             "affected_node_count": 15,
             "direct_affected_nodes": [
                 "172.16.0.1",
@@ -530,7 +530,7 @@
             "source_node": "8.0.6.4",
             "risk_score": 1.0,
             "confidence": 1.0,
-            "blast_radius": 2,
+            "blast_radius": 0,
             "affected_node_count": 0,
             "direct_affected_nodes": [],
             "secondary_affected_nodes": [],
@@ -541,7 +541,7 @@
             "source_node": "172.16.0.1",
             "risk_score": 0.9941,
             "confidence": 0.9941,
-            "blast_radius": 2,
+            "blast_radius": 15,
             "affected_node_count": 15,
             "direct_affected_nodes": [
                 "192.168.10.50",
@@ -585,7 +585,7 @@
             "source_node": "91.189.95.15",
             "risk_score": 0.9935,
             "confidence": 0.9935,
-            "blast_radius": 2,
+            "blast_radius": 14,
             "affected_node_count": 14,
             "direct_affected_nodes": [
                 "192.168.10.50",
@@ -627,7 +627,7 @@
             "source_node": "91.189.92.191",
             "risk_score": 0.9904,
             "confidence": 0.9904,
-            "blast_radius": 2,
+            "blast_radius": 14,
             "affected_node_count": 14,
             "direct_affected_nodes": [
                 "192.168.10.50"
@@ -669,7 +669,7 @@
             "source_node": "52.216.21.133",
             "risk_score": 0.995,
             "confidence": 0.995,
-            "blast_radius": 2,
+            "blast_radius": 14,
             "affected_node_count": 14,
             "direct_affected_nodes": [
                 "192.168.10.50"
