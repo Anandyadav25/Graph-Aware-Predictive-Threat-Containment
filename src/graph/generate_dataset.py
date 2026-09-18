@@ -12,16 +12,25 @@ def generate_attack_dataset():
 
     graph = create_enterprise_network()
 
-    scenarios = [
-        {"name": "web_attack", "source": "web_server", "max_hops": 1},
-        {"name": "web_attack", "source": "web_server", "max_hops": 2},
-        {"name": "endpoint_attack", "source": "employee_pc_1", "max_hops": 1},
-        {"name": "endpoint_attack", "source": "employee_pc_1", "max_hops": 2},
-        {"name": "application_attack", "source": "app_server", "max_hops": 1},
-        {"name": "application_attack", "source": "app_server", "max_hops": 2},
-        {"name": "authentication_attack", "source": "auth_server", "max_hops": 1},
-        {"name": "authentication_attack", "source": "auth_server", "max_hops": 2},
+    sources = [
+        "firewall",
+        "web_server",
+        "app_server",
+        "database",
+        "auth_server",
+        "employee_pc_1",
+        "employee_pc_2",
     ]
+
+    scenarios = []
+
+    for source in sources:
+         for max_hops in [1, 2, 3]:
+              scenarios.append({
+                "name": f"{source}_attack_{max_hops}hop",
+                "source": source,
+                "max_hops": max_hops
+            })
 
     rows = []
 
