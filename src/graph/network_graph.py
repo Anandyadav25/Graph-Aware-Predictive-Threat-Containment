@@ -52,6 +52,9 @@ def create_enterprise_network():
 
     for device, attributes in devices.items():
         graph.add_node(device, **attributes)
+        
+    for node in graph.nodes:
+        graph.nodes[node]["degree"] = 0
 
     # Add network connections
     connections = [
@@ -64,6 +67,8 @@ def create_enterprise_network():
     ]
 
     graph.add_edges_from(connections)
+    for node in graph.nodes:
+        graph.nodes[node]["degree"] = graph.degree[node]
 
     return graph
 def simulate_attack(graph, compromised_node):

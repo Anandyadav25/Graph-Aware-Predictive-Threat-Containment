@@ -3,37 +3,44 @@
         {
             "id": "firewall",
             "type": "firewall",
-            "criticality": 5
+            "criticality": 5,
+            "degree": 1
         },
         {
             "id": "web_server",
             "type": "server",
-            "criticality": 4
+            "criticality": 4,
+            "degree": 2
         },
         {
             "id": "app_server",
             "type": "server",
-            "criticality": 4
+            "criticality": 4,
+            "degree": 3
         },
         {
             "id": "database",
             "type": "database",
-            "criticality": 5
+            "criticality": 5,
+            "degree": 1
         },
         {
             "id": "auth_server",
             "type": "authentication",
-            "criticality": 5
+            "criticality": 5,
+            "degree": 3
         },
         {
             "id": "employee_pc_1",
             "type": "endpoint",
-            "criticality": 2
+            "criticality": 2,
+            "degree": 1
         },
         {
             "id": "employee_pc_2",
             "type": "endpoint",
-            "criticality": 2
+            "criticality": 2,
+            "degree": 1
         }
     ],
     "edges": [
