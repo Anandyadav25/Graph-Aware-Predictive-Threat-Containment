@@ -15,5 +15,6 @@ class ThreatGNN(nn.Module):
         x = torch.relu(x)
 
         x = self.conv2(x, edge_index)
+        return x.squeeze(-1)
 
         return x
