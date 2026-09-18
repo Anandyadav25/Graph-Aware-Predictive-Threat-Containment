@@ -4,43 +4,50 @@
             "id": "firewall",
             "type": "firewall",
             "criticality": 5,
-            "degree": 1
+            "degree": 1,
+            "betweenness": 0.0
         },
         {
             "id": "web_server",
             "type": "server",
             "criticality": 4,
-            "degree": 2
+            "degree": 2,
+            "betweenness": 0.3333333333333333
         },
         {
             "id": "app_server",
             "type": "server",
             "criticality": 4,
-            "degree": 3
+            "degree": 3,
+            "betweenness": 0.7333333333333333
         },
         {
             "id": "database",
             "type": "database",
             "criticality": 5,
-            "degree": 1
+            "degree": 1,
+            "betweenness": 0.0
         },
         {
             "id": "auth_server",
             "type": "authentication",
             "criticality": 5,
-            "degree": 3
+            "degree": 3,
+            "betweenness": 0.6
         },
         {
             "id": "employee_pc_1",
             "type": "endpoint",
             "criticality": 2,
-            "degree": 1
+            "degree": 1,
+            "betweenness": 0.0
         },
         {
             "id": "employee_pc_2",
             "type": "endpoint",
             "criticality": 2,
-            "degree": 1
+            "degree": 1,
+            "betweenness": 0.0
         }
     ],
     "edges": [

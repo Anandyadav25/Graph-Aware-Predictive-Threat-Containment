@@ -83,11 +83,12 @@ def export_network_graph(graph):
 
     for node, attributes in graph.nodes(data=True):
         graph_data["nodes"].append({
-          "id": node,
-           "type": attributes["type"],
-           "criticality": attributes["criticality"],
-          "degree": attributes["degree"]
-        })
+        "id": node,
+        "type": attributes["type"],
+        "criticality": attributes["criticality"],
+        "degree": attributes["degree"],
+        "betweenness": attributes["betweenness"]
+    })
 
     for source, target in graph.edges():
         graph_data["edges"].append({

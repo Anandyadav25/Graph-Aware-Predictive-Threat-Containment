@@ -67,8 +67,15 @@ def create_enterprise_network():
     ]
 
     graph.add_edges_from(connections)
+    
     for node in graph.nodes:
         graph.nodes[node]["degree"] = graph.degree[node]
+
+
+    betweenness = nx.betweenness_centrality(graph)
+
+    for node in graph.nodes:
+        graph.nodes[node]["betweenness"] = betweenness[node]
 
     return graph
 def simulate_attack(graph, compromised_node):
