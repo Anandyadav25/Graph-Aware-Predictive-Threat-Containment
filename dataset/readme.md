@@ -29,6 +29,20 @@ Each edge represents a network connection between two nodes.
 
 Contains simulated attack propagation scenarios.
 
+### attack_scenario_summary.csv
+
+Contains one summary record for each simulated attack scenario.
+
+### Columns
+
+- `scenario` - Name of the attack scenario
+- `source_node` - Initial compromised node
+- `hops` - Maximum attack propagation distance
+- `compromised_nodes` - Nodes reached by the simulated attack
+- `blast_radius` - Number of nodes reached by the attack
+
+The summary contains 21 attack scenarios and provides a compact view of the simulated blast radius for each scenario.
+
 ### Columns
 
 - `scenario` - Name of the attack scenario

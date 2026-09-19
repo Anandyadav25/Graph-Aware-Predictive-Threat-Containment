@@ -71,6 +71,65 @@ def generate_attack_dataset():
     print(f"Total records: {len(rows)}")
 
 
+def generate_scenario_summary():
+    """
+    Generate a summary of the blast radius for each attack scenario.
+    """
+
+    graph = create_enterprise_network()
+
+    sources = [
+        "firewall",
+        "web_server",
+        "app_server",
+        "database",
+        "auth_server",
+        "employee_pc_1",
+        "employee_pc_2",
+    ]
+
+    rows = []
+
+    for source in sources:
+        for max_hops in [1, 2, 3]:
+            scenario_name = f"{source}_attack_{max_hops}hop"
+
+            compromised_nodes = run_attack_scenario(
+                graph,
+                source,
+                max_hops
+            )
+
+            rows.append({
+                "scenario": scenario_name,
+                "source_node": source,
+                "hops": max_hops,
+                "compromised_nodes": ",".join(compromised_nodes),
+                "blast_radius": len(compromised_nodes)
+            })
+
+    output_path = (
+        Path(__file__).resolve().parents[2]
+        / "dataset"
+        / "attack_scenario_summary.csv"
+    )
+
+    with open(output_path, "w", newline="") as csv_file:
+        fieldnames = [
+            "scenario",
+            "source_node",
+            "hops",
+            "compromised_nodes",
+            "blast_radius"
+        ]
+
+        writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(rows)
+
+    print(f"Scenario summary generated: {output_path}")
+    print(f"Total scenarios summarized: {len(rows)}")
+
 def export_network_graph(graph):
     """
     Export the enterprise network structure for GNN processing.
@@ -112,4 +171,5 @@ if __name__ == "__main__":
     graph = create_enterprise_network()
 
     generate_attack_dataset()
+    generate_scenario_summary()
     export_network_graph(graph)

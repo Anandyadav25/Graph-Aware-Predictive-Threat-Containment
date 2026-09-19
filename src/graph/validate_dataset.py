@@ -6,6 +6,7 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 CSV_PATH = PROJECT_ROOT / "dataset" / "network_attack_dataset.csv"
+SUMMARY_PATH = PROJECT_ROOT / "dataset" / "attack_scenario_summary.csv"
 GRAPH_PATH = PROJECT_ROOT / "dataset" / "network_graph.json"
 
 
@@ -70,6 +71,55 @@ def validate_attack_dataset():
     print(f"Sources: {len(sources)}")
     print(f"Hop values: {sorted(hops)}")
 
+def validate_scenario_summary():
+    """Validate the generated attack scenario summary."""
+
+    required_columns = {
+        "scenario",
+        "source_node",
+        "hops",
+        "compromised_nodes",
+        "blast_radius",
+    }
+
+    with open(SUMMARY_PATH, newline="") as csv_file:
+        rows = list(csv.DictReader(csv_file))
+
+    if len(rows) != 21:
+        raise ValueError(
+            f"Expected 21 scenario summaries, found {len(rows)}."
+        )
+
+    actual_columns = set(rows[0].keys())
+
+    if actual_columns != required_columns:
+        raise ValueError(
+            f"Unexpected summary columns: {actual_columns}"
+        )
+
+    scenarios = {row["scenario"] for row in rows}
+    hops = {int(row["hops"]) for row in rows}
+    blast_radii = [int(row["blast_radius"]) for row in rows]
+
+    if len(scenarios) != 21:
+        raise ValueError(
+            f"Expected 21 unique scenarios, found {len(scenarios)}."
+        )
+
+    if hops != {1, 2, 3}:
+        raise ValueError(
+            f"Unexpected hop values in summary: {hops}"
+        )
+
+    if any(radius < 1 or radius > 7 for radius in blast_radii):
+        raise ValueError(
+            "Blast radius must be between 1 and 7."
+        )
+
+    print("Scenario summary validation passed.")
+    print(f"Scenarios: {len(scenarios)}")
+    print(f"Hop values: {sorted(hops)}")
+    print(f"Blast radius range: {min(blast_radii)}-{max(blast_radii)}")
 
 def validate_network_graph():
     """Validate the exported network graph."""
@@ -113,5 +163,6 @@ def validate_network_graph():
 
 if __name__ == "__main__":
     validate_attack_dataset()
+    validate_scenario_summary()
     validate_network_graph()
     print("All dataset validations passed.")
