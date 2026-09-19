@@ -53,8 +53,7 @@ def create_enterprise_network():
     for device, attributes in devices.items():
         graph.add_node(device, **attributes)
         
-    for node in graph.nodes:
-        graph.nodes[node]["degree"] = 0
+
 
     # Add network connections
     connections = [
