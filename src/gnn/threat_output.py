@@ -1,5 +1,8 @@
 """
 Create a clean threat-response payload from blast-radius results.
+
+This output contains raw GNN and blast-radius information
+for consumption by the Member 3 agent pipeline.
 """
 
 from pathlib import Path
@@ -38,41 +41,32 @@ def main():
 
     for threat in data.get("threats", []):
 
-        affected = threat.get(
-            "affected_nodes",
-            [],
-        )
-
         response = {
             "source_node": threat["source_node"],
+
             "risk_score": threat["risk_score"],
+
             "confidence": threat["confidence"],
+
             "blast_radius": threat["blast_radius"],
+
             "affected_node_count": threat[
                 "affected_node_count"
             ],
-            "direct_affected_nodes": [
-                item["node"]
-                for item in threat.get(
-                    "direct_affected_nodes",
-                    [],
-                )
-            ],
-            "secondary_affected_nodes": [
-                item["node"]
-                for item in threat.get(
-                    "secondary_affected_nodes",
-                    [],
-                )
-            ],
-            "affected_nodes": [
-                item["node"]
-                for item in affected
-            ],
-            "recommended_action": (
-                "ISOLATE_AND_INVESTIGATE"
-                if threat["risk_score"] >= 0.99
-                else "INVESTIGATE"
+
+            "direct_affected_nodes": threat.get(
+                "direct_affected_nodes",
+                [],
+            ),
+
+            "secondary_affected_nodes": threat.get(
+                "secondary_affected_nodes",
+                [],
+            ),
+
+            "affected_nodes": threat.get(
+                "affected_nodes",
+                [],
             ),
         }
 
@@ -80,14 +74,18 @@ def main():
 
     output = {
         "module": "Member 2 - GNN Threat Prediction",
+
         "model": data.get(
             "model",
             "GraphSAGE",
         ),
+
         "threshold": data.get(
             "threshold"
         ),
+
         "threat_count": len(threats),
+
         "threats": threats,
     }
 

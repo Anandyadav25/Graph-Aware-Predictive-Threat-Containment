@@ -2,22 +2,14 @@
 Risk-aware blast-radius analysis for GNN-detected threats.
 """
 
-from pathlib import Path
 from collections import deque
+from pathlib import Path
 import json
 
 import torch
 
-from src.gnn.model import ThreatGNN
+from src.gnn.predict import run_prediction
 
-
-GRAPH_PATH = Path(
-    "data/processed/cic_ids2017_full_graph.pt"
-)
-
-MODEL_PATH = Path(
-    "data/processed/threat_gnn_cic_ids2017.pt"
-)
 
 OUTPUT_PATH = Path(
     "data/processed/blast_radius_results.json"
@@ -89,118 +81,183 @@ def find_reachable_nodes(
     return nodes_by_hop
 
 
-def main():
+def calculate_blast_radius(
+    source_node,
+    data,
+    probabilities,
+    threshold,
+    adjacency,
+    max_hops=MAX_HOPS,
+):
+    """
+    Calculate the risk-aware blast radius for one GNN-detected threat.
 
-    print("\n========================================")
-    print(" RISK-AWARE BLAST RADIUS ANALYSIS")
-    print("========================================")
+    Args:
+        source_node: IP address of the threat node.
+        data: Loaded PyTorch Geometric graph.
+        probabilities: GNN threat probabilities for all nodes.
+        threshold: GNN detection threshold.
+        adjacency: Network adjacency list.
+        max_hops: Maximum topology distance to inspect.
 
-    # ---------------------------------------------------------
-    # Load graph
-    # ---------------------------------------------------------
+    Returns:
+        Dictionary containing the threat and blast-radius information.
+    """
 
-    if not GRAPH_PATH.exists():
-        raise FileNotFoundError(
-            f"Graph not found: {GRAPH_PATH}"
+    try:
+        node_id = data.node_ips.index(source_node)
+    except ValueError as exc:
+        raise ValueError(
+            f"Source node '{source_node}' was not found "
+            "in the CIC-IDS2017 graph."
+        ) from exc
+
+    source_risk = float(
+        probabilities[node_id].item()
+    )
+
+    nodes_by_hop = find_reachable_nodes(
+        node_id,
+        adjacency,
+        max_hops,
+    )
+
+    direct_nodes = []
+    secondary_nodes = []
+
+    # 1-hop affected nodes.
+    for neighbor_id in nodes_by_hop.get(1, []):
+
+        risk = float(
+            probabilities[neighbor_id].item()
         )
 
-    if not MODEL_PATH.exists():
-        raise FileNotFoundError(
-            f"Model not found: {MODEL_PATH}"
+        if risk >= threshold:
+
+            direct_nodes.append(
+                {
+                    "node": data.node_ips[neighbor_id],
+                    "risk_score": round(risk, 4),
+                    "hops": 1,
+                }
+            )
+
+    # 2-hop affected nodes.
+    for neighbor_id in nodes_by_hop.get(2, []):
+
+        risk = float(
+            probabilities[neighbor_id].item()
         )
 
-    data = torch.load(
-        GRAPH_PATH,
-        weights_only=False,
+        if risk >= threshold:
+
+            secondary_nodes.append(
+                {
+                    "node": data.node_ips[neighbor_id],
+                    "risk_score": round(risk, 4),
+                    "hops": 2,
+                }
+            )
+
+    detailed_affected_nodes = (
+        direct_nodes
+        + secondary_nodes
     )
 
-    checkpoint = torch.load(
-        MODEL_PATH,
-        weights_only=False,
-    )
-
-    print(
-        f"\nGraph nodes: "
-        f"{data.num_nodes:,}"
-    )
-
-    print(
-        f"Graph edges: "
-        f"{data.num_edges:,}"
-    )
-
-    # ---------------------------------------------------------
-    # Load trained GraphSAGE model
-    # ---------------------------------------------------------
-
-    model = ThreatGNN(
-        input_features=checkpoint[
-            "input_features"
-        ],
-        hidden_features=checkpoint[
-            "hidden_features"
-        ],
-    )
-
-    model.load_state_dict(
-        checkpoint[
-            "model_state_dict"
-        ]
-    )
-
-    model.eval()
-
-    # ---------------------------------------------------------
-    # Feature normalization
-    # ---------------------------------------------------------
-
-    mean = checkpoint[
-        "feature_mean"
+    affected_nodes = [
+        item["node"]
+        for item in detailed_affected_nodes
     ]
 
-    std = checkpoint[
-        "feature_std"
-    ].clone()
-
-    std[std < 1e-8] = 1.0
-
-    data.x = (
-        data.x - mean
-    ) / std
-
-    data.x = torch.nan_to_num(
-        data.x,
-        nan=0.0,
-        posinf=0.0,
-        neginf=0.0,
+    affected_node_count = len(
+        affected_nodes
     )
 
-    # ---------------------------------------------------------
-    # GNN prediction
-    # ---------------------------------------------------------
+    return {
+        "source_node": source_node,
 
-    with torch.no_grad():
+        "risk_score": round(
+            source_risk,
+            4,
+        ),
 
-        logits = model(
-            data.x,
-            data.edge_index,
+        "confidence": round(
+            source_risk,
+            4,
+        ),
+
+        "blast_radius": affected_node_count,
+
+        "max_hops": max_hops,
+
+        "direct_affected_nodes": direct_nodes,
+
+        "secondary_affected_nodes": secondary_nodes,
+
+        "affected_nodes": affected_nodes,
+
+        "affected_node_count": affected_node_count,
+    }
+    
+def predict_threat_with_blast_radius(source_node):
+    """
+    Return the GNN prediction and blast-radius result
+    for one source node.
+
+    This is the integration function for Member 3.
+    """
+    data, probabilities, predictions, threshold = run_prediction()
+
+    adjacency = build_adjacency(
+        data.edge_index,
+        data.num_nodes,
+    )
+
+    node_id = data.node_ips.index(source_node)
+
+    if int(predictions[node_id].item()) != 1:
+        risk_score = float(
+            probabilities[node_id].item()
         )
 
-        probabilities = torch.sigmoid(
-            logits
-        ).view(-1)
+        return {
+            "source_node": source_node,
+            "risk_score": round(risk_score, 4),
+            "confidence": round(risk_score, 4),
+            "blast_radius": 0,
+            "affected_nodes": [],
+        }
 
-    threshold = float(
-        checkpoint["threshold"]
+    result = calculate_blast_radius(
+        source_node=source_node,
+        data=data,
+        probabilities=probabilities,
+        threshold=threshold,
+        adjacency=adjacency,
+        max_hops=MAX_HOPS,
     )
 
-    predictions = (
-        probabilities >= threshold
-    ).long()
+    return {
+        "source_node": result["source_node"],
+        "risk_score": result["risk_score"],
+        "confidence": result["confidence"],
+        "blast_radius": result["blast_radius"],
+        "affected_nodes": result["affected_nodes"],
+    }
 
-    # ---------------------------------------------------------
-    # Build network topology
-    # ---------------------------------------------------------
+
+def analyze_all_threats():
+    """
+    Run GNN prediction once and calculate blast radius
+    for every detected threat.
+
+    Returns:
+        Structured blast-radius result dictionary.
+    """
+
+    data, probabilities, predictions, threshold = (
+        run_prediction()
+    )
 
     adjacency = build_adjacency(
         data.edge_index,
@@ -211,243 +268,117 @@ def main():
         predictions == 1
     )[0]
 
+    results = []
+
+    for node_id in threat_indices.tolist():
+
+        source_ip = data.node_ips[node_id]
+
+        result = calculate_blast_radius(
+            source_node=source_ip,
+            data=data,
+            probabilities=probabilities,
+            threshold=threshold,
+            adjacency=adjacency,
+            max_hops=MAX_HOPS,
+        )
+
+        results.append(result)
+
+    return {
+        "model": "GraphSAGE",
+        "threshold": threshold,
+        "max_hops": MAX_HOPS,
+        "threat_count": len(results),
+        "threats": results,
+    }
+
+
+def main():
+
+    print("\n========================================")
+    print(" RISK-AWARE BLAST RADIUS ANALYSIS")
+    print("========================================")
+
+    output = analyze_all_threats()
+
     print(
-        f"\nDetected threat nodes: "
-        f"{len(threat_indices)}"
+        f"\nThreats analyzed: "
+        f"{output['threat_count']}"
     )
 
     print(
         f"Risk threshold: "
-        f"{threshold:.4f}"
+        f"{output['threshold']:.4f}"
     )
 
     print(
         f"Maximum topology distance: "
-        f"{MAX_HOPS} hops"
+        f"{output['max_hops']} hops"
     )
-
-    # ---------------------------------------------------------
-    # Analyze every detected threat
-    # ---------------------------------------------------------
-
-    results = []
 
     print("\n--- THREAT ANALYSIS ---")
 
-    for node_id in threat_indices.tolist():
-
-        source_ip = data.node_ips[
-            node_id
-        ]
-
-        source_risk = float(
-            probabilities[node_id].item()
-        )
-
-        nodes_by_hop = find_reachable_nodes(
-            node_id,
-            adjacency,
-            MAX_HOPS,
-        )
-
-        direct_nodes = []
-        secondary_nodes = []
-
-        # -----------------------------------------------------
-        # 1-hop affected nodes
-        # -----------------------------------------------------
-
-        for neighbor_id in nodes_by_hop.get(
-            1,
-            [],
-        ):
-
-            risk = float(
-                probabilities[
-                    neighbor_id
-                ].item()
-            )
-
-            if risk >= threshold:
-
-                direct_nodes.append(
-                    {
-                        "node": data.node_ips[
-                            neighbor_id
-                        ],
-                        "risk_score": round(
-                            risk,
-                            4,
-                        ),
-                        "hops": 1,
-                    }
-                )
-
-        # -----------------------------------------------------
-        # 2-hop affected nodes
-        # -----------------------------------------------------
-
-        for neighbor_id in nodes_by_hop.get(
-            2,
-            [],
-        ):
-
-            risk = float(
-                probabilities[
-                    neighbor_id
-                ].item()
-            )
-
-            if risk >= threshold:
-
-                secondary_nodes.append(
-                    {
-                        "node": data.node_ips[
-                            neighbor_id
-                        ],
-                        "risk_score": round(
-                            risk,
-                            4,
-                        ),
-                        "hops": 2,
-                    }
-                )
-
-        # -----------------------------------------------------
-        # Combine affected nodes
-        # -----------------------------------------------------
-
-        affected_nodes = (
-            direct_nodes
-            + secondary_nodes
-        )
-
-        affected_node_count = len(
-            affected_nodes
-        )
-
-        # -----------------------------------------------------
-        # Threat result
-        # -----------------------------------------------------
-
-        result = {
-
-            "source_node": source_ip,
-
-            "risk_score": round(
-                source_risk,
-                4,
-            ),
-
-            "confidence": round(
-                source_risk,
-                4,
-            ),
-
-            # Blast radius = number of affected
-            # high-risk nodes.
-            "blast_radius": (
-                affected_node_count
-            ),
-
-            # Maximum topology distance
-            # examined separately.
-            "max_hops": MAX_HOPS,
-
-            "direct_affected_nodes": (
-                direct_nodes
-            ),
-
-            "secondary_affected_nodes": (
-                secondary_nodes
-            ),
-
-            "affected_nodes": (
-                affected_nodes
-            ),
-
-            "affected_node_count": (
-                affected_node_count
-            ),
-        }
-
-        results.append(result)
-
-        # -----------------------------------------------------
-        # Console output
-        # -----------------------------------------------------
+    for result in output["threats"]:
 
         print(
-            f"\nThreat: {source_ip}"
+            f"\nThreat: "
+            f"{result['source_node']}"
         )
 
         print(
-            f"Risk: {source_risk:.4f}"
+            f"Risk: "
+            f"{result['risk_score']:.4f}"
         )
 
         print(
             f"1-hop high-risk nodes: "
-            f"{len(direct_nodes)}"
+            f"{len(result['direct_affected_nodes'])}"
         )
 
         print(
             f"2-hop high-risk nodes: "
-            f"{len(secondary_nodes)}"
+            f"{len(result['secondary_affected_nodes'])}"
         )
 
         print(
             f"Blast radius: "
-            f"{affected_node_count} nodes"
+            f"{result['blast_radius']} nodes"
         )
 
         print(
             f"Maximum topology distance: "
-            f"{MAX_HOPS} hops"
+            f"{result['max_hops']} hops"
         )
 
-        if direct_nodes:
+        if result["direct_affected_nodes"]:
 
             print(
                 "Direct:",
                 ", ".join(
                     item["node"]
-                    for item in direct_nodes[:10]
+                    for item in result[
+                        "direct_affected_nodes"
+                    ][:10]
                 ),
             )
 
-        if secondary_nodes:
+        if result["secondary_affected_nodes"]:
 
             print(
                 "Secondary:",
                 ", ".join(
                     item["node"]
-                    for item in secondary_nodes[:10]
+                    for item in result[
+                        "secondary_affected_nodes"
+                    ][:10]
                 ),
             )
-
-    # ---------------------------------------------------------
-    # Save structured blast-radius output
-    # ---------------------------------------------------------
 
     OUTPUT_PATH.parent.mkdir(
         parents=True,
         exist_ok=True,
     )
-
-    output = {
-
-        "model": "GraphSAGE",
-
-        "threshold": threshold,
-
-        "max_hops": MAX_HOPS,
-
-        "threat_count": len(
-            results
-        ),
-
-        "threats": results,
-    }
 
     with open(
         OUTPUT_PATH,
@@ -460,10 +391,6 @@ def main():
             file,
             indent=4,
         )
-
-    # ---------------------------------------------------------
-    # Final message
-    # ---------------------------------------------------------
 
     print(
         "\n========================================"
@@ -478,17 +405,7 @@ def main():
     )
 
     print(
-        f"\nThreats analyzed: "
-        f"{len(results)}"
-    )
-
-    print(
-        f"Maximum topology distance: "
-        f"{MAX_HOPS} hops"
-    )
-
-    print(
-        f"Structured output: "
+        f"\nStructured output: "
         f"{OUTPUT_PATH}"
     )
 

@@ -13,18 +13,14 @@ GRAPH_PATH = Path("data/processed/cic_ids2017_full_graph.pt")
 MODEL_PATH = Path("data/processed/threat_gnn_cic_ids2017.pt")
 
 
-def main():
-    print("\n========================================")
-    print(" GNN THREAT PREDICTION")
-    print("========================================")
+def load_graph_and_model():
+    """Load the CIC-IDS2017 graph and trained GraphSAGE model."""
 
-    # Load graph
     data = torch.load(
         GRAPH_PATH,
         weights_only=False,
     )
 
-    # Load trained model
     checkpoint = torch.load(
         MODEL_PATH,
         weights_only=False,
@@ -41,7 +37,23 @@ def main():
 
     model.eval()
 
-    # Apply the same normalization used during training
+    return data, model, checkpoint
+
+
+def run_prediction():
+    """
+    Run GraphSAGE prediction on the complete CIC-IDS2017 graph.
+
+    Returns:
+        data: Graph data containing node information.
+        probabilities: Threat probability for every node.
+        predictions: Binary threat/benign prediction for every node.
+        threshold: Detection threshold used by the trained model.
+    """
+
+    data, model, checkpoint = load_graph_and_model()
+
+    # Apply the same normalization used during training.
     mean = checkpoint["feature_mean"]
     std = checkpoint["feature_std"]
 
@@ -56,7 +68,7 @@ def main():
         neginf=0.0,
     )
 
-    # Generate predictions
+    # Generate predictions.
     with torch.no_grad():
         logits = model(
             data.x,
@@ -71,9 +83,77 @@ def main():
         probabilities >= threshold
     ).long()
 
+    return (
+        data,
+        probabilities,
+        predictions,
+        threshold,
+    )
+
+
+def predict_threat(source_node):
+    """
+    Return the raw GNN prediction for one source node.
+
+    Args:
+        source_node: IP address of the node to inspect.
+
+    Returns:
+        Dictionary containing the source node, risk score,
+        confidence, and predicted threat status.
+    """
+
+    (
+        data,
+        probabilities,
+        predictions,
+        threshold,
+    ) = run_prediction()
+
+    # Find the requested IP address.
+    try:
+        node_index = data.node_ips.index(source_node)
+    except ValueError as exc:
+        raise ValueError(
+            f"Source node '{source_node}' was not found "
+            "in the CIC-IDS2017 graph."
+        ) from exc
+
+    risk_score = float(
+        probabilities[node_index].item()
+    )
+
+    prediction = int(
+        predictions[node_index].item()
+    )
+
+    return {
+        "source_node": source_node,
+        "risk_score": risk_score,
+        "confidence": risk_score,
+        "predicted_threat": prediction == 1,
+        "threshold": float(threshold),
+    }
+
+
+def main():
+
+    print("\n========================================")
+    print(" GNN THREAT PREDICTION")
+    print("========================================")
+
+    (
+        data,
+        probabilities,
+        predictions,
+        threshold,
+    ) = run_prediction()
+
     print(f"\nGraph nodes: {data.num_nodes:,}")
     print(f"Graph edges: {data.num_edges:,}")
-    print(f"Detection threshold: {threshold:.4f}")
+    print(
+        f"Detection threshold: {threshold:.4f}"
+    )
 
     print("\n--- TOP RISK NODES ---")
 
@@ -92,8 +172,12 @@ def main():
         start=1,
     ):
         ip = data.node_ips[node_id]
+
         score = probabilities[node_id].item()
-        prediction = int(predictions[node_id])
+
+        prediction = int(
+            predictions[node_id].item()
+        )
 
         status = (
             "THREAT"
@@ -109,10 +193,11 @@ def main():
         )
 
     threat_count = int(
-        predictions.sum()
+        predictions.sum().item()
     )
 
     print("\n--- SUMMARY ---")
+
     print(
         f"Predicted threats: "
         f"{threat_count:,}"
