@@ -1,15 +1,24 @@
 from triage_agent import TriageAgent
 from planning_agent import PlanningAgent
+from recommendation_agent import RecommendationAgent
 
 
 def run_agent_pipeline(threat_data):
     """
-    Run the threat through the Triage Agent
-    and then the Planning Agent.
+    Run the complete agent pipeline:
+
+    Threat Data
+        ↓
+    Triage Agent
+        ↓
+    Planning Agent
+        ↓
+    Recommendation Agent
     """
 
     triage_agent = TriageAgent()
     planning_agent = PlanningAgent()
+    recommendation_agent = RecommendationAgent()
 
     # Step 1: Triage
     triage_result = triage_agent.analyze(threat_data)
@@ -17,16 +26,23 @@ def run_agent_pipeline(threat_data):
     # Step 2: Planning
     planning_result = planning_agent.create_plan(triage_result)
 
+    # Step 3: Recommendation
+    recommendation_result = recommendation_agent.generate_recommendation(
+        planning_result,
+        threat_data
+    )
+
     return {
         "triage": triage_result,
-        "plan": planning_result
+        "plan": planning_result,
+        "recommendation": recommendation_result
     }
 
 
 if __name__ == "__main__":
 
     # Temporary test data.
-    # Later this will come from the GNN.
+    # We will replace this with the REAL GNN output next.
     threat_data = {
         "source_node": "Web_Server",
         "attack_type": "Web Attack",
@@ -49,10 +65,13 @@ if __name__ == "__main__":
 
     print("\n--- PLANNING ---")
     for key, value in result["plan"].items():
-
         if key == "recommended_actions":
             print(f"{key}:")
             for action in value:
                 print(f"  - {action}")
         else:
             print(f"{key}: {value}")
+
+    print("\n--- RECOMMENDATION ---")
+    for key, value in result["recommendation"].items():
+        print(f"{key}: {value}")
