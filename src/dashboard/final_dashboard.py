@@ -1,7 +1,19 @@
+import base64
 import datetime
 import textwrap
 import urllib.parse
+import sys
+from pathlib import Path
+
 import streamlit as st
+
+# Add project root to Python path
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from src.agents.agent_pipeline import run_agent_pipeline
 
 # ============================================================
 # GRAPH AWARE PREDICTIVE THREAT CONTAINMENT
@@ -35,13 +47,44 @@ if "approval_states" not in st.session_state:
 if "active_tab" not in st.session_state:
     st.session_state.active_tab = "Dashboard"
 
+if "live_threat_result" not in st.session_state:
+    st.session_state.live_threat_result = None
+
+if "live_source_node" not in st.session_state:
+    st.session_state.live_source_node = "192.168.10.5"
+
 def toggle_theme():
     """Toggles theme cleanly without widget key collision."""
     st.session_state.dark_mode = not st.session_state.dark_mode
 
+
+# ------------------------------------------------------------
+# LIVE GNN + AGENTIC AI PIPELINE
+# ------------------------------------------------------------
+
+@st.cache_data(show_spinner=False)
+def run_live_pipeline(source_node):
+    """
+    Runs the real GNN + Agentic AI pipeline.
+
+    GNN
+      ↓
+    Triage Agent
+      ↓
+    Planning Agent
+      ↓
+    Recommendation Agent
+    """
+
+    return run_agent_pipeline(source_node)
+
 # ------------------------------------------------------------
 # THREAT SCENARIOS DATABASE
 # ------------------------------------------------------------
+# Dashboard data mode
+# LIVE = real GNN + Qwen3 agents
+# DEMO = predefined demonstration scenarios
+DATA_MODE = "LIVE"
 
 SCENARIOS = {
     "Web Attack": {
@@ -121,16 +164,119 @@ SCENARIOS = {
 # ------------------------------------------------------------
 
 selected_name = st.session_state.selected_attack
-if selected_name not in SCENARIOS:
-    selected_name = "Web Attack"
-    st.session_state.selected_attack = selected_name
 
-threat = SCENARIOS[selected_name]
+if DATA_MODE == "LIVE" and selected_name == "Live GNN Threat":
+
+    # Run the REAL GNN + Agentic AI pipeline
+    if st.session_state.live_threat_result is None:
+
+        with st.spinner(
+            "Running GNN threat detection and Agentic AI analysis..."
+        ):
+            st.session_state.live_threat_result = (
+                run_live_pipeline(
+                    st.session_state.live_source_node
+                )
+            )
+
+    live_result = st.session_state.live_threat_result
+
+    incident = live_result["incident"]
+    triage = live_result["triage"]
+    plan = live_result["plan"]
+    recommendation = live_result["recommendation"]
+
+    threat = {
+        "id": "LIVE-GNN-001",
+
+        "attack_type": incident.get(
+            "attack_type",
+            "GNN Detected Threat"
+        ),
+
+        "source": incident.get(
+            "source_node",
+            "Unknown"
+        ),
+
+        "risk": incident.get(
+            "risk_score",
+            0
+        ),
+
+        "severity": triage.get(
+            "severity",
+            "LOW"
+        ),
+
+        "priority": triage.get(
+            "priority",
+            "NORMAL"
+        ),
+
+        "blast": incident.get(
+            "blast_radius",
+            0
+        ),
+
+        "affected": incident.get(
+            "affected_nodes",
+            []
+        ),
+
+        "action": recommendation.get(
+            "recommended_action",
+            "Continue monitoring"
+        ),
+
+        "confidence": recommendation.get(
+            "confidence",
+            "LOW"
+        ),
+
+        "reason": recommendation.get(
+            "reason",
+            ""
+        ),
+
+        "expected_effect": recommendation.get(
+            "expected_effect",
+            ""
+        ),
+
+        "pills": [
+            "Real GNN Prediction",
+            "Qwen3 Agentic Analysis",
+            "Human Approval Required"
+        ],
+
+        "agent_reasoning": triage.get(
+            "reasoning",
+            ""
+        ),
+
+        "planning_reasoning": plan.get(
+            "reasoning",
+            ""
+        ),
+    }
+
+else:
+
+    if selected_name not in SCENARIOS:
+        selected_name = "Web Attack"
+        st.session_state.selected_attack = selected_name
+
+    threat = SCENARIOS[selected_name]
+
 
 if selected_name not in st.session_state.approval_states:
     st.session_state.approval_states[selected_name] = "PENDING"
 
-current_approval = st.session_state.approval_states[selected_name]
+current_approval = st.session_state.approval_states[
+    selected_name
+]
+
 dark = st.session_state.dark_mode
 
 # ------------------------------------------------------------
@@ -460,9 +606,10 @@ footer {{visibility: hidden !important;}}
     left: 0 !important;
     width: 100% !important;
     height: 100% !important;
-    z-index: 2 !important;
+    z-index: 1 !important;
     pointer-events: none !important;
     overflow: visible !important;
+    display: block !important;
 }}
 
 .topology-lines-img {{
@@ -478,6 +625,7 @@ footer {{visibility: hidden !important;}}
 }}
 
 .topology-lines-bg {{
+    display: block !important;
     position: absolute !important;
     top: 0 !important;
     left: 0 !important;
@@ -687,6 +835,8 @@ with st.sidebar:
     render_html(f"<div style='margin-top:16px;color:{C['muted']};font-size:11px;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;'>Threat Scenario Selector</div>")
 
     scenario_options = list(SCENARIOS.keys())
+    if DATA_MODE == "LIVE":
+        scenario_options = ["Live GNN Threat"] + scenario_options
     current_idx = scenario_options.index(selected_name)
     
     new_attack = st.selectbox(
@@ -943,13 +1093,16 @@ node_positions = {
 # Determine state of each node
 node_states = {}
 for n in node_positions:
-    if current_approval == "APPROVED" and n == threat["source"]:
+    is_src = (n == threat["source"] or (threat["source"] in ["192.168.10.5", "192.168.10.50"] and n == "Web_Server"))
+    is_affected = (n in threat["affected"] or (threat["source"] in ["192.168.10.5", "192.168.10.50"] and n in ["App_Server", "Database", "Finance_PC"]))
+    
+    if current_approval == "APPROVED" and is_src:
         node_states[n] = "secured"
     elif current_approval == "APPROVED":
         node_states[n] = "normal"  # All returned to normal when contained!
-    elif n == threat["source"]:
+    elif is_src:
         node_states[n] = "danger"
-    elif n in threat["affected"]:
+    elif is_affected:
         node_states[n] = "risk"
     else:
         node_states[n] = "normal"
@@ -968,49 +1121,48 @@ edges = [
 def is_threat_propagation_line(a, b, attack_name, source, affected, is_approved):
     """Returns True if the connection between node a and node b is an active attack/blast-radius vector."""
     if is_approved:
-        return False  # When approved by admin, ALL lines return back to normal!
+        return False
 
-    # Scenario 1: Web Attack (Source: Web_Server)
-    if source == "Web_Server" and attack_name == "Web Attack":
-        return (a, b) in {
+    scenario_edges = {
+        "Web Attack": {
             ("Web_Server", "App_Server"),
             ("Web_Server", "Database"),
             ("App_Server", "Finance_PC"),
             ("Database", "Finance_PC"),
-        }
-
-    # Scenario 2: Brute Force (Source: Finance_PC)
-    elif source == "Finance_PC":
-        return (a, b) in {
+        },
+        "Brute Force": {
             ("App_Server", "Finance_PC"),
             ("Database", "Finance_PC"),
-        }
-
-    # Scenario 3: DoS Attack (Source: Web_Server)
-    elif attack_name == "DoS Attack":
-        return (a, b) in {
+        },
+        "DoS Attack": {
             ("Firewall", "Web_Server"),
             ("Web_Server", "App_Server"),
-        }
-
-    # Scenario 4: Botnet Activity (Source: App_Server)
-    elif source == "App_Server":
-        return (a, b) in {
+        },
+        "Botnet Activity": {
             ("Web_Server", "App_Server"),
             ("App_Server", "Finance_PC"),
             ("Database", "Finance_PC"),
-        }
-
-    # Scenario 5: Ransomware Spread (Source: Database)
-    elif source == "Database":
-        return (a, b) in {
+        },
+        "Ransomware Spread": {
             ("Web_Server", "Database"),
             ("Database", "Finance_PC"),
             ("App_Server", "Finance_PC"),
             ("Web_Server", "App_Server"),
-        }
+        },
+        "Live GNN Threat": {
+            ("Web_Server", "App_Server"),
+            ("Web_Server", "Database"),
+            ("App_Server", "Finance_PC"),
+            ("Database", "Finance_PC"),
+        },
+    }
 
-    return False
+    active_edges = scenario_edges.get(attack_name, set())
+
+    return (
+        (a, b) in active_edges
+        or (b, a) in active_edges
+    )
 
 # Build SVG paths and animated elements for topology connections
 svg_elements = []
@@ -1022,7 +1174,12 @@ for a, b in edges:
     px2, py2 = int(x2 * 10), int(y2 * 4)
 
     is_orange_threat = is_threat_propagation_line(
-        a, b, selected_name, threat["source"], threat["affected"], (current_approval == "APPROVED")
+        a,
+        b,
+        selected_name,
+        threat["source"],
+        threat["affected"],
+        current_approval == "APPROVED"
     )
     
     if is_orange_threat:
@@ -1053,8 +1210,8 @@ raw_svg = (
     f'</svg>'
 )
 
-encoded_svg = urllib.parse.quote(raw_svg)
-svg_data_uri = f"data:image/svg+xml;utf8,{encoded_svg}"
+svg_b64 = base64.b64encode(raw_svg.encode("utf-8")).decode("utf-8")
+svg_data_uri = f"data:image/svg+xml;base64,{svg_b64}"
 
 # Generate Node DOM Elements
 nodes_markup = []
